@@ -1,5 +1,6 @@
 lexer
-main
-main.cpp
-Test.c
 .vscode
+main
+compiler
+test.cpp
+sample.c

@@ -5,7 +5,8 @@ echo "Formatting code..."
 clang-format -i *.c *.cpp *.h *.hpp 2>/dev/null || true
 
 echo "Compiling..."
-g++ -std=c++20 -Wall -Wextra -Wpedantic -O2 -DLEXER_TEST lexer.cpp  -o lexer
+g++ -std=c++20 -Wall -Wextra -Wpedantic -O2 -DLEXER_TEST  lexer.cpp parser.cpp node.cpp main.cpp -o compiler
+./compiler sample.c
 
 
 echo "Build successful."

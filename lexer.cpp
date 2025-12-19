@@ -253,7 +253,3 @@ std::vector<Token> Tokenize(std::string &SourceCode) {
   tokens.push_back(Token{EOF_TOKEN, ""});
   return tokens;
 }
-
-#ifdef LEXER_TEST
-int main(void) { return 0; }
-#endif
