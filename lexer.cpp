@@ -181,75 +181,92 @@ std::vector<Token> Tokenize(std::string &SourceCode) {
   std::vector<Token> tokens;
   std::string::size_type index = 0;
   std::string word;
+
   while (index < SourceCode.length()) {
-    if (isspace(SourceCode[index])) {
+    char current = SourceCode[index];
+
+    if (isspace(current)) {
       if (!word.empty()) {
         Token token = GetToken(word);
         tokens.push_back(token);
         word.clear();
       }
+
       index++;
       continue;
     }
 
-    else if (IsParenthesis((std::string){SourceCode[index]})) {
-      if (!word.empty()) {
-        Token token = GetToken(word);
-        tokens.push_back(token);
-        word.clear();
-      }
-      word.push_back(SourceCode[index]);
-      Token token = GetToken(word);
-      tokens.push_back(token);
-      word.clear();
-      index++;
-      continue;
-    } else if (IsOperator((std::string){SourceCode[index]})) {
-      if (!word.empty()) {
-        Token token = GetToken(word);
-        tokens.push_back(token);
-        word.clear();
-      }
-      word.push_back(SourceCode[index]);
+    if (index + 1 < SourceCode.length()) {
+      std::string twoChar = std::string(1, SourceCode[index]) +
+                            std::string(1, SourceCode[index + 1]);
 
-      if (index + 1 < SourceCode.length() &&
-          IsOperator((std::string){SourceCode[index + 1]})) {
-        std::string temp =
-            std::string(1, static_cast<char>(SourceCode[index])) +
-            std::string(1, static_cast<char>(SourceCode[index + 1]));
-        if (IsOperator(temp)) {
-          word = temp;
-          index += 1;
+      if (IsOperator(twoChar)) {
+        if (!word.empty()) {
+          Token token = GetToken(word);
+          tokens.push_back(token);
+          word.clear();
         }
-      }
-      Token token = GetToken(word);
-      tokens.push_back(token);
-      word.clear();
-      index++;
-      continue;
 
-    } else if (SourceCode[index] == ';') {
+        Token token = GetToken(twoChar);
+        tokens.push_back(token);
+
+        index += 2;
+        continue;
+      }
+    }
+
+    if (IsParenthesis(std::string(1, current))) {
       if (!word.empty()) {
         Token token = GetToken(word);
         tokens.push_back(token);
         word.clear();
       }
-      word.push_back(';');
-      Token token = GetToken(word);
+
+      Token token = GetToken(std::string(1, current));
       tokens.push_back(token);
-      word.clear();
+
       index++;
       continue;
-    } else {
-      word.push_back(SourceCode[index]);
-      index++;
     }
+
+    if (current == ';') {
+      if (!word.empty()) {
+        Token token = GetToken(word);
+        tokens.push_back(token);
+        word.clear();
+      }
+
+      Token token = GetToken(std::string(1, current));
+      tokens.push_back(token);
+
+      index++;
+      continue;
+    }
+
+    if (IsOperator(std::string(1, current))) {
+      if (!word.empty()) {
+        Token token = GetToken(word);
+        tokens.push_back(token);
+        word.clear();
+      }
+
+      Token token = GetToken(std::string(1, current));
+      tokens.push_back(token);
+
+      index++;
+      continue;
+    }
+
+    word.push_back(current);
+    index++;
   }
+
   if (!word.empty()) {
     Token token = GetToken(word);
     tokens.push_back(token);
     word.clear();
   }
+
   tokens.push_back(Token{EOF_TOKEN, ""});
   return tokens;
 }
