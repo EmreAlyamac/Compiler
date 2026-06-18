@@ -4,3 +4,4 @@ main
 compiler
 test.cpp
 sample.c
+.gitignore
