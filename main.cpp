@@ -8,7 +8,6 @@
 
 std::string WriteToken(Token token) {
   switch (token.type) {
-  // Keywords
   case TokenType::KW_IF:
     return "Keyword: if";
   case TokenType::KW_ELSE:
@@ -24,13 +23,11 @@ std::string WriteToken(Token token) {
   case TokenType::KW_VOID:
     return "Keyword: void";
 
-  // Literals
   case TokenType::IDENTIFIER:
     return "Identifier: " + token.value;
   case TokenType::INTEGER:
     return "Integer: " + token.value;
 
-  // Operators
   case TokenType::PLUS:
     return "Operator: +";
   case TokenType::MINUS:
@@ -58,7 +55,6 @@ std::string WriteToken(Token token) {
   case TokenType::DECREMENT:
     return "Operator: --";
 
-  // Compound Assignment
   case TokenType::PLUS_ASSIGN:
     return "Operator: +=";
   case TokenType::MINUS_ASSIGN:
