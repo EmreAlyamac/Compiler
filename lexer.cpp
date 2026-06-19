@@ -8,7 +8,7 @@
 #include <vector>
 
 const std::unordered_set<std::string> keywords = { //
-    "if", "else", "while", "for", "return", "int", "void"};
+    "if", "else", "while", "for", "return", "int", "void", "break", "continue"};
 
 const std::unordered_set<std::string> operators = {
     "+",  "-",  "*",  "/",  "=",  "==", "!=", "<",  ">",  "<=", ">=",
@@ -25,6 +25,8 @@ enum TokenType {
   KW_RETURN,
   KW_INT,
   KW_VOID,
+  KW_BREAK,
+  KW_CONTINUE,
   IDENTIFIER,
   INTEGER,
   LESS,
@@ -72,7 +74,8 @@ const std::unordered_map<std::string, TokenType> TokenTypeMap = {
     {"return", KW_RETURN},
     {"int", KW_INT},
     {"void", KW_VOID},
-
+    {"break", KW_BREAK},
+    {"continue", KW_CONTINUE},
     // Simple Operators
     {"+", PLUS},
     {"-", MINUS},

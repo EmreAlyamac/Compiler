@@ -8,6 +8,10 @@
 
 std::string WriteToken(Token token) {
   switch (token.type) {
+  case TokenType::KW_BREAK:
+    return "Keyword: break";
+  case TokenType::KW_CONTINUE:
+    return "Keyword: continue";
   case TokenType::KW_IF:
     return "Keyword: if";
   case TokenType::KW_ELSE:
@@ -22,7 +26,6 @@ std::string WriteToken(Token token) {
     return "Keyword: int";
   case TokenType::KW_VOID:
     return "Keyword: void";
-
   case TokenType::IDENTIFIER:
     return "Identifier: " + token.value;
   case TokenType::INTEGER:

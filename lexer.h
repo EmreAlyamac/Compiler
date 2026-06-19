@@ -11,6 +11,8 @@ enum TokenType {
   KW_RETURN,
   KW_INT,
   KW_VOID,
+  KW_BREAK,
+  KW_CONTINUE,
   IDENTIFIER,
   INTEGER,
   LESS,

@@ -46,7 +46,13 @@ public:
 
   ReturnNode(Node *value) : value(value) {}
 
-  std::string to_string() override { return "return " + value->to_string(); }
+  std::string to_string() override {
+    if (value == nullptr) {
+      return "return";
+    }
+
+    return "return " + value->to_string();
+  }
 };
 
 class BlockNode : public StatementNode {
@@ -235,6 +241,57 @@ public:
     result += ")";
     return result;
   }
+};
+
+class PostfixExpressionNode : public ExpressionNode {
+public:
+  Node *operand = nullptr;
+  std::string op;
+
+  PostfixExpressionNode(Node *operand, std::string op)
+      : operand(operand), op(std::move(op)) {}
+
+  std::string to_string() override { return operand->to_string() + op; }
+};
+
+class ForNode : public StatementNode {
+public:
+  Node *initialization = nullptr;
+  Node *condition = nullptr;
+  Node *increment = nullptr;
+  Node *body = nullptr;
+
+  ForNode(Node *initialization, Node *condition, Node *increment, Node *body)
+      : initialization(initialization), condition(condition),
+        increment(increment), body(body) {}
+
+  std::string to_string() override {
+    std::string result = "for (";
+    if (initialization != nullptr) {
+      result += initialization->to_string();
+    }
+    result += "; ";
+    if (condition != nullptr) {
+      result += condition->to_string();
+    }
+    result += "; ";
+    if (increment != nullptr) {
+      result += increment->to_string();
+    }
+    result += ") ";
+    result += body->to_string();
+    return result;
+  }
+};
+
+class BreakNode : public StatementNode {
+public:
+  std::string to_string() override { return "break"; }
+};
+
+class ContinueNode : public StatementNode {
+public:
+  std::string to_string() override { return "continue"; }
 };
 
 class ExpressionStatementNode : public StatementNode {

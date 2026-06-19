@@ -16,6 +16,8 @@ ParameterNode *ParseParameter(AST &ast, std::vector<Token> &tokens, size_t &i);
 Node *ParseFunctionCall(AST &ast, std::vector<Token> &tokens, size_t &i);
 std::vector<ParameterNode *>
 ParseParameterList(AST &ast, std::vector<Token> &tokens, size_t &i);
+Node *ParsePostfixExpression(AST &ast, std::vector<Token> &tokens, size_t &i);
+
 // Return pointer to the parsed expression either integer or a variable or a
 // parenthesized expression
 Node *ParseSimpleExpression(AST &ast, std::vector<Token> &tokens, size_t &i) {
@@ -81,13 +83,13 @@ Node *ParseSimpleExpression(AST &ast, std::vector<Token> &tokens, size_t &i) {
 }
 
 Node *ParseMulDiv(AST &ast, std::vector<Token> &tokens, size_t &i) {
-  Node *left = ParseSimpleExpression(ast, tokens, i);
+  Node *left = ParsePostfixExpression(ast, tokens, i);
 
   while (tokens[i].type == MULTIPLY || tokens[i].type == DIVIDE) {
     std::string op = tokens[i].value;
     i++;
 
-    Node *right = ParseSimpleExpression(ast, tokens, i);
+    Node *right = ParsePostfixExpression(ast, tokens, i);
 
     auto binary = std::make_unique<BinaryExpressionNode>(left, right, op);
     left = binary.get();
@@ -138,11 +140,17 @@ Node *ParseExpression(AST &ast, std::vector<Token> &tokens, size_t &i) {
 }
 
 Node *ParseReturn(AST &ast, std::vector<Token> &tokens, size_t &i) {
-  i++;
-  Node *value = ParseExpression(ast, tokens, i);
+  i++; // consume return
+
+  Node *value = nullptr;
+  if (tokens[i].type != SEMICOLON) {
+    value = ParseExpression(ast, tokens, i);
+  }
+
   if (tokens[i].type != SEMICOLON) {
     throw std::runtime_error("Expected ;");
   }
+
   i++;
   auto returnNode = std::make_unique<ReturnNode>(value);
   Node *ptr = returnNode.get();
@@ -234,28 +242,40 @@ Node *ParseBlock(AST &ast, std::vector<Token> &tokens, size_t &i) {
 
 Node *ParseIf(AST &ast, std::vector<Token> &tokens, size_t &i) {
   i++; // consume if
+
   if (tokens[i].type != LPAREN) {
-    throw std::runtime_error("Expected (");
+    throw std::runtime_error("Expected ( after if");
   }
   i++; // consume (
 
   Node *condition = ParseExpression(ast, tokens, i);
 
   if (tokens[i].type != RPAREN) {
-    throw std::runtime_error("Expected )");
+    throw std::runtime_error("Expected ) after if condition");
   }
   i++; // consume )
 
+  if (tokens[i].type != LBRACE) {
+    throw std::runtime_error("Expected { after if condition");
+  }
+
   Node *thenBlock = ParseBlock(ast, tokens, i);
+  Node *elseBranch = nullptr;
+
   if (tokens[i].type == KW_ELSE) {
     i++; // consume else
-    Node *elseBlock = ParseBlock(ast, tokens, i);
-    auto ifNode = std::make_unique<IfNode>(condition, thenBlock, elseBlock);
-    Node *ptr = ifNode.get();
-    ast.nodes.push_back(std::move(ifNode));
-    return ptr;
+
+    if (tokens[i].type == KW_IF) {
+      elseBranch = ParseIf(ast, tokens, i);
+    } else if (tokens[i].type == LBRACE) {
+      elseBranch = ParseBlock(ast, tokens, i);
+    } else {
+      throw std::runtime_error("Expected if or { after else");
+    }
   }
-  auto ifNode = std::make_unique<IfNode>(condition, thenBlock, nullptr);
+
+  auto ifNode = std::make_unique<IfNode>(condition, thenBlock, elseBranch);
+
   Node *ptr = ifNode.get();
   ast.nodes.push_back(std::move(ifNode));
   return ptr;
@@ -280,6 +300,119 @@ Node *ParseWhile(AST &ast, std::vector<Token> &tokens, size_t &i) {
 
   Node *ptr = whileNode.get();
   ast.nodes.push_back(std::move(whileNode));
+  return ptr;
+}
+
+Node *ParsePostfixExpression(AST &ast, std::vector<Token> &tokens, size_t &i) {
+  Node *operand = ParseSimpleExpression(ast, tokens, i);
+
+  while (tokens[i].type == INCREMENT || tokens[i].type == DECREMENT) {
+    std::string op = tokens[i].value;
+    i++;
+
+    auto postfix = std::make_unique<PostfixExpressionNode>(operand, op);
+
+    operand = postfix.get();
+    ast.nodes.push_back(std::move(postfix));
+  }
+
+  return operand;
+}
+
+Node *ParseAssignmentWithoutSemicolon(AST &ast, std::vector<Token> &tokens,
+                                      size_t &i) {
+  std::string name = tokens[i].value;
+  i++;
+
+  if (tokens[i].type != ASSIGN) {
+    throw std::runtime_error("Expected = in assignment");
+  }
+  i++;
+
+  Node *value = ParseExpression(ast, tokens, i);
+
+  auto assignment = std::make_unique<AssignmentNode>(name, value);
+  Node *ptr = assignment.get();
+  ast.nodes.push_back(std::move(assignment));
+  return ptr;
+}
+
+Node *ParseFor(AST &ast, std::vector<Token> &tokens, size_t &i) {
+  i++; // consume for
+
+  if (tokens[i].type != LPAREN) {
+    throw std::runtime_error("Expected ( after for");
+  }
+  i++; // consume (
+
+  Node *initialization = nullptr;
+
+  if (tokens[i].type == KW_INT) {
+    initialization = ParseIntDeclaration(ast, tokens, i);
+  } else if (tokens[i].type == IDENTIFIER && tokens[i + 1].type == ASSIGN) {
+    initialization = ParseAssignment(ast, tokens, i);
+  } else if (tokens[i].type == SEMICOLON) {
+    i++;
+  } else {
+    throw std::runtime_error("Expected for-loop initialization");
+  }
+
+  Node *condition = nullptr;
+
+  if (tokens[i].type != SEMICOLON) {
+    condition = ParseExpression(ast, tokens, i);
+  }
+
+  if (tokens[i].type != SEMICOLON) {
+    throw std::runtime_error("Expected ; after for-loop condition");
+  }
+  i++;
+
+  Node *increment = nullptr;
+
+  if (tokens[i].type != RPAREN) {
+    if (tokens[i].type == IDENTIFIER && tokens[i + 1].type == ASSIGN) {
+      increment = ParseAssignmentWithoutSemicolon(ast, tokens, i);
+    } else {
+      increment = ParseExpression(ast, tokens, i);
+    }
+  }
+  if (tokens[i].type != RPAREN) {
+    throw std::runtime_error("Expected ) after for-loop clauses");
+  }
+  i++;
+
+  Node *body = ParseBlock(ast, tokens, i);
+
+  auto forNode =
+      std::make_unique<ForNode>(initialization, condition, increment, body);
+
+  Node *ptr = forNode.get();
+  ast.nodes.push_back(std::move(forNode));
+  return ptr;
+}
+
+Node *ParseBreak(AST &ast, std::vector<Token> &tokens, size_t &i) {
+  i++; // consume break
+  if (tokens[i].type != SEMICOLON) {
+    throw std::runtime_error("Expected ; after break");
+  }
+  i++;
+  auto breakNode = std::make_unique<BreakNode>();
+  Node *ptr = breakNode.get();
+  ast.nodes.push_back(std::move(breakNode));
+  return ptr;
+}
+
+Node *ParseContinue(AST &ast, std::vector<Token> &tokens, size_t &i) {
+  i++; // consume continue
+  if (tokens[i].type != SEMICOLON) {
+    throw std::runtime_error("Expected ; after continue");
+  }
+  i++;
+  auto continueNode = std::make_unique<ContinueNode>();
+  Node *ptr = continueNode.get();
+  ast.nodes.push_back(std::move(continueNode));
   return ptr;
 }
 
@@ -380,7 +513,10 @@ Node *ParseStatement(AST &ast, std::vector<Token> &tokens, size_t &i) {
     return ParseReturn(ast, tokens, i);
   }
 
-  if (tokens[i].type == KW_INT) {
+  if (tokens[i].type == KW_INT ||
+      tokens[i].type ==
+          KW_VOID) { // This will allow void a = 5 type declarations
+    // TODO: fix
     if (tokens[i + 1].type == IDENTIFIER && tokens[i + 2].type == LPAREN) {
       return ParseFunctionDecl(ast, tokens, i);
     }
@@ -416,6 +552,17 @@ Node *ParseStatement(AST &ast, std::vector<Token> &tokens, size_t &i) {
 
   if (tokens[i].type == KW_WHILE) {
     return ParseWhile(ast, tokens, i);
+  }
+
+  if (tokens[i].type == KW_FOR) {
+    return ParseFor(ast, tokens, i);
+  }
+
+  if (tokens[i].type == KW_BREAK) {
+    return ParseBreak(ast, tokens, i);
+  }
+  if (tokens[i].type == KW_CONTINUE) {
+    return ParseContinue(ast, tokens, i);
   }
 
   throw std::runtime_error("Unexpected token: " + tokens[i].value);
