@@ -112,14 +112,18 @@ int main(int argc, char *argv[]) {
     std::cerr << "Usage: " << argv[0] << " <source file>" << std::endl;
     return 1;
   }
+
+  std::vector<Token> tokens;
+  AST ast;
+
   try {
     std::ifstream file(argv[1]);
     std::string source((std::istreambuf_iterator<char>(file)),
                        std::istreambuf_iterator<char>());
 
-    std::vector<Token> tokens = Tokenize(source);
+    tokens = Tokenize(source);
 
-    AST ast = Parse(tokens);
+    ast = Parse(tokens);
     SemanticAnalyzer analyzer;
     analyzer.Analyze(ast);
 
@@ -134,6 +138,7 @@ int main(int argc, char *argv[]) {
   }
 #endif
 #ifdef PARSER_TEST
+
   std::cout << "AST:" << std::endl;
   std::cout << ast.root->to_string() << std::endl;
 #endif
