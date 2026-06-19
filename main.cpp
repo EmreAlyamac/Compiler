@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
+#include "semantic.h"
 
 #include <fstream>
 #include <iostream>
@@ -111,13 +112,21 @@ int main(int argc, char *argv[]) {
     std::cerr << "Usage: " << argv[0] << " <source file>" << std::endl;
     return 1;
   }
-  std::ifstream file(argv[1]);
-  std::string source((std::istreambuf_iterator<char>(file)),
-                     std::istreambuf_iterator<char>());
+  try {
+    std::ifstream file(argv[1]);
+    std::string source((std::istreambuf_iterator<char>(file)),
+                       std::istreambuf_iterator<char>());
 
-  std::vector<Token> tokens = Tokenize(source);
+    std::vector<Token> tokens = Tokenize(source);
 
-  AST ast = Parse(tokens);
+    AST ast = Parse(tokens);
+    SemanticAnalyzer analyzer;
+    analyzer.Analyze(ast);
+
+  } catch (const std::runtime_error &e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
 #ifdef LEXER_TEST
   std::cout << "Tokens:" << std::endl;
   for (const auto &token : tokens) {
@@ -127,6 +136,9 @@ int main(int argc, char *argv[]) {
 #ifdef PARSER_TEST
   std::cout << "AST:" << std::endl;
   std::cout << ast.root->to_string() << std::endl;
+#endif
+#ifdef SEMANTIC_TEST
+
 #endif
 
   return 0;
