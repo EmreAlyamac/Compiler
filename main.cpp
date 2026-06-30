@@ -108,18 +108,24 @@ std::string WriteToken(Token token) {
 }
 
 int main(int argc, char *argv[]) {
-if (argc != 2) {
-std::cerr << "Usage: " << argv[0] << " <source file>" << std::endl;
-return 1;
-}
+  if (argc != 2) {
+    std::cerr << "Usage: " << argv[0] << " <source file>" << std::endl;
+    return 1;
+  }
 
-std::vector<Token> tokens;
-AST ast;
+  std::vector<Token> tokens;
+  AST ast;
 
-try {
-std::ifstream file(argv[1]);
-std::string source((std::istreambuf_iterator<char>(file)),
-std::istreambuf_iterator<char>());
+  try {
+    std::ifstream file(argv[1]);
+    std::string source((std::istreambuf_iterator<char>(file)),
+                       std::istreambuf_iterator<char>());
+
+    tokens = Tokenize(source);
+
+    ast = Parse(tokens);
+    SemanticAnalyzer analyzer;
+    analyzer.Analyze(ast);
 
 tokens = Tokenize(source);
 
@@ -139,8 +145,8 @@ std::cout << WriteToken(token) << std::endl;
 #endif
 #ifdef PARSER_TEST
 
-std::cout << "AST:" << std::endl;
-std::cout << ast.root->to_string() << std::endl;
+  std::cout << "AST:" << std::endl;
+  std::cout << ast.root->to_string() << std::endl;
 #endif
 #ifdef SEMANTIC_TEST
 
