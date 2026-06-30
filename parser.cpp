@@ -517,10 +517,15 @@ Node *ParseStatement(AST &ast, std::vector<Token> &tokens, size_t &i) {
       tokens[i].type ==
           KW_VOID) { // This will allow void a = 5 type declarations
     // TODO: fix
+
     if (tokens[i + 1].type == IDENTIFIER && tokens[i + 2].type == LPAREN) {
       return ParseFunctionDecl(ast, tokens, i);
     }
 
+    if (tokens[i].type == KW_VOID){
+      throw std::runtime_error("Cannot initialize a variable of type 'void'");
+    }
+    //
     return ParseIntDeclaration(ast, tokens, i);
   }
 
